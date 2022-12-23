@@ -5,6 +5,6 @@ return {
 	["Script Teleport"] = 879177392,
 	["Give Collectibles"] = 697566862,
 	["Interior Invite"] = -1891171016,
-	["Vehicle Kick"] = -852914485,
-	["Transaction Error"] = -492741651
+	["Vehicle Kick"] = 3580698306,
+	["Transaction Error"] = 3526858346
 }

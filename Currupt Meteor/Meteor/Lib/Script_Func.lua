@@ -5,7 +5,7 @@ local ScriptEvent = require("Meteor/Data/ScriptEvents")
 local script_func = {}
 
 function script_func.get_global_main(pid)
-	return script.get_global_i(1894573 + (1 + (pid * 599) + 510))
+	return script.get_global_i(1894573 + (1 + (pid * 608) + 510))
 end
 
 function script_func.get_global_main_2(pid)
