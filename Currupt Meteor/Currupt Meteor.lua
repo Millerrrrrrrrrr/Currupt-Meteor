@@ -29,7 +29,7 @@ if native.call(0xFCA9373EF340AC0A):__tostring(true) ~= "1.64" then -- NETWORK::G
     menu.notify("This script is outdated, some features may not work as intended.", "WARNING", 12, 0xff0000ff) 
 end
 
-Meteor = "Currupt Meteor V2.0"
+Meteor = "Currupt Meteor V2.1"
 discord = "discord.com/invite/CaAaTn865K"
 
 local require_files = {"Meteor/Lib/Utils", "Meteor/Lib/Menyoo", "Meteor/Lib/Natives", "Meteor/Lib/Script_Func", "Meteor/Lib/Entity_Func", "Meteor/Lib/Text_Func", "Meteor/Lib/Memory", "Meteor/Lib/Player_Func", "Meteor/Data/NetEventIDs", "Meteor/Data/NetEventNames", "Meteor/Data/NotifyColours", "Meteor/Mapper/ObjectModels", "Meteor/Data/ScriptEvents", "Meteor/Mapper/PedModels", "Meteor/Mapper/VehicleModels", "Meteor/Data/DataMain", "Meteor/Data/ModderFlags", "Meteor/Debug"}
@@ -51,7 +51,7 @@ local PedModel = require("Meteor/Mapper/PedModels")
 local VehicleModel = require("Meteor/Mapper/VehicleModels")
 local DataMain = require("Meteor/Data/DataMain")
 local custommodderflags = require("Meteor/Data/ModderFlags")
-
+local Animations = require("Meteor/Lib/Animations")
 local DebugMode = require("Meteor/Debug")
 
 for i = 1, #require_files do
@@ -496,6 +496,23 @@ feature["Ragdoll Loop"] = menu.add_feature("Ragdoll Loop", "toggle", localparent
 		system.yield(0)
 	end
 end)
+
+feature["Rainbow Weapon"] = menu.add_feature("Rainbow Weapon", "value_i", localparents["Player Options"].id, function(f)
+    if f.on and not entity.is_entity_dead(player.get_player_ped(player.player_id())) then
+        weapon.set_ped_weapon_tint_index(player.get_player_ped(player.player_id()),
+        ped.get_current_ped_weapon(player.get_player_ped(player.player_id())),
+        math.random(0, weapon.get_weapon_tint_count(ped.get_current_ped_weapon(player.get_player_ped(player.player_id()))
+                )
+            )
+        )
+    end
+    system.wait(f.value)
+    return HANDLER_CONTINUE
+end)
+feature["Rainbow Weapon"].min = 0
+feature["Rainbow Weapon"].max = 1000
+feature["Rainbow Weapon"].value = 100
+feature["Rainbow Weapon"].mod = 100
 
 feature["RP Crouch"] = menu.add_feature("RP Crouch", "value_str", localparents["Player Options"].id, function(f) -- Credits to noob9000 for most of this
 	local Crouching = false
@@ -11748,6 +11765,36 @@ playerfeature["Make Nearby Peds Hostile"] = menu.add_player_feature("Make Nearby
 	end
 end)
 
+playerfeature["Block Passive Mode"] = menu.add_player_feature("Block Passive Mode", "toggle", playerparents["Trolling"].id, function(f, pid)
+	while f.on do
+		system.yield(0)
+		if player.is_player_valid(pid) then
+			script.trigger_script_event(1920583171, pid, {player.player_id(), 1})
+			system.wait(500)
+		else
+			f.on = false
+			menu.notify("Invalid Player.", Meteor, 3, 211)
+			return
+		end
+	end
+	if player.is_player_valid(pid) then
+		script.trigger_script_event(1920583171, pid, {player.player_id(), 0})
+	else
+		f.on = false
+		menu.notify("Invalid Player.", Meteor, 3, 211)
+		return
+	end
+end)
+
+playerfeature["Water Loop"] = menu.add_player_feature("Water Loop", "toggle", playerparents["Trolling"].id, function(f, pid)
+    while f.on do
+        local pos = player.get_player_coords(pid)
+        pos.z = pos.z -1
+        fire.add_explosion(pos, 13, true, false, 0, pid)
+        system.wait(0)
+    end
+end)
+
 playerfeature["le funne"] = menu.add_player_feature("le funne", "toggle", playerparents["Trolling"].id, function(f, pid)
 	while f.on do
 		system.yield(0)
@@ -11795,6 +11842,38 @@ playerfeature["Fake RP Drop"] = menu.add_player_feature("Fake RP Drop", "toggle"
 end)
 
 playerparents["Griefing"] = menu.add_player_feature("Griefing", "parent", playerparents["Meteor"].id)
+
+playerfeature["Set Bounty"] = menu.add_player_feature("Set Bounty", "action_value_str", playerparents["Griefing"].id, function(f, pid)
+    local input_stat, input_val = input.get("Enter Bounty Amount (0-10000)", "", 5, 3)
+    if input_stat == 1 then
+        return HANDLER_CONTINUE
+    end
+    if input_stat == 2 then
+        return HANDLER_POP
+    end
+
+	if player.is_player_valid(pid) then
+		if f.value == 0 then
+			for i = 0, 31 do
+				if player.is_player_valid(i) then
+					script.trigger_script_event(1370461707, i, {player.player_id(), pid, 1, input_val, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, script_func.get_global_9(), script_func.get_global_10()})
+				end
+			end
+		end
+		if f.value == 1 then
+			for i = 0, 31 do
+				if player.is_player_valid(i) then
+					script.trigger_script_event(1370461707, i, {player.player_id(), pid, 1, input_val, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, script_func.get_global_9(), script_func.get_global_10()})
+				end
+			end
+		end
+	else
+		menu.notify("Invalid Player.", Meteor, 3, 211)
+	end
+end):set_str_data({
+	"Anonymous",
+	"Named"
+})
 
 playerfeature["Send Mugger"] = menu.add_player_feature("Send Mugger", "action_value_str", playerparents["Griefing"].id, function(f, pid)
 	if network.is_session_started() then
@@ -11959,33 +12038,21 @@ system.wait(100)
 	end
 end)
 
-playerfeature["Block Passive Mode"] = menu.add_player_feature("Block Passive Mode", "toggle", playerparents["Griefing"].id, function(f, pid)
-	while f.on do
-		system.yield(0)
-		if player.is_player_valid(pid) then
-			script.trigger_script_event(1920583171, pid, {player.player_id(), 1})
-			system.wait(500)
-		else
-			f.on = false
-			menu.notify("Invalid Player.", Meteor, 3, 211)
-			return
-		end
-	end
-	if player.is_player_valid(pid) then
-		script.trigger_script_event(1920583171, pid, {player.player_id(), 0})
-	else
-		f.on = false
-		menu.notify("Invalid Player.", Meteor, 3, 211)
-		return
-	end
-end)
-
 playerfeature["Freeze Player"] = menu.add_player_feature("Freeze Player", "toggle", playerparents["Griefing"].id, function(f, pid)
     while f.on do
         network.request_control_of_entity(player.get_player_ped(pid))
         native.call(0xC5F68BE9613E2D18, player.get_player_ped(pid), 1, -524452543453, -524452543453, -524452543453, -524452543453, -524452543453, -524452543453, 0, 1, 1, 1, 1, 1)
 		script.trigger_script_event(-93722397, pid, {player.player_id()})
         system.yield(0)
+    end
+end)
+
+playerfeature["Fire loop"] = menu.add_player_feature("Fire loop", "toggle", playerparents["Griefing"].id, function(f, pid)
+    while f.on do
+        local pos = player.get_player_coords(pid)
+        pos.z = pos.z -1
+        fire.add_explosion(pos, 12, true, false, 0, pid)
+        system.wait(0)
     end
 end)
 
@@ -12029,79 +12096,9 @@ playerfeature["Send To Mission"] = menu.add_player_feature("Send To Mission", "a
 	end
 end)
 
-playerfeature["Set Bounty"] = menu.add_player_feature("Set Bounty", "action_value_str", playerparents["Griefing"].id, function(f, pid)
-    local input_stat, input_val = input.get("Enter Bounty Amount (0-10000)", "", 5, 3)
-    if input_stat == 1 then
-        return HANDLER_CONTINUE
-    end
-    if input_stat == 2 then
-        return HANDLER_POP
-    end
-
-	if player.is_player_valid(pid) then
-		if f.value == 0 then
-			for i = 0, 31 do
-				if player.is_player_valid(i) then
-					script.trigger_script_event(1370461707, i, {player.player_id(), pid, 1, input_val, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, script_func.get_global_9(), script_func.get_global_10()})
-				end
-			end
-		end
-		if f.value == 1 then
-			for i = 0, 31 do
-				if player.is_player_valid(i) then
-					script.trigger_script_event(1370461707, i, {player.player_id(), pid, 1, input_val, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, script_func.get_global_9(), script_func.get_global_10()})
-				end
-			end
-		end
-	else
-		menu.notify("Invalid Player.", Meteor, 3, 211)
-	end
-end):set_str_data({
-	"Anonymous",
-	"Named"
-})
-
 playerparents["Friendly"] = menu.add_player_feature("Friendly", "parent", playerparents["Meteor"].id)
 
 playerparents["Give Collectibles"] = menu.add_player_feature("Give Collectibles", "parent", playerparents["Friendly"].id)
-
-playerfeature["RP + Money Drop"] = menu.add_player_feature("RP + Money Drop", "toggle", playerparents["Give Collectibles"].id, function(f, pid)
-	while f.on do
-		local random_hash = gameplay.get_hash_key("vw_prop_vw_colle_alien")
-		local random_int = math.random(1, 8)
-		if random_int == 1 then
-			random_hash = gameplay.get_hash_key("vw_prop_vw_colle_alien")
-		elseif random_int == 2 then
-			random_hash = gameplay.get_hash_key("vw_prop_vw_colle_beast")
-		elseif random_int == 3 then
-			random_hash = gameplay.get_hash_key("vw_prop_vw_colle_imporage")
-		elseif random_int == 4 then
-			random_hash = gameplay.get_hash_key("vw_prop_vw_colle_pogo")
-		elseif random_int == 5 then
-			random_hash = gameplay.get_hash_key("vw_prop_vw_colle_prbubble")
-		elseif random_int == 6 then
-			random_hash = gameplay.get_hash_key("vw_prop_vw_colle_rsrcomm")
-		elseif random_int == 7 then
-			random_hash = gameplay.get_hash_key("vw_prop_vw_colle_rsrgeneric")
-		elseif random_int == 8 then
-			random_hash = gameplay.get_hash_key("vw_prop_vw_colle_sasquatch")
-		end
-		utilities.request_model(random_hash)
-		natives.CREATE_AMBIENT_PICKUP(gameplay.get_hash_key("PICKUP_CUSTOM_SCRIPT"), player.get_player_coords(pid) + v3(0, 0, 3), 0, 1, random_hash, false, true)
-		system.yield(50)
-	end
-end)
-
-playerfeature["Drop Cards"] = menu.add_player_feature("Drop Cards", "toggle", playerparents["Friendly"].id, function(f, pid)
-        local coords = player.get_player_coords(pid)
-        coords.z = coords.z + 1.5
-        local card = gameplay.get_hash_key("vw_prop_vw_lux_card_01a")
-        utilities.request_model(card)
-        if streaming.has_model_loaded(card) == false then  
-            streaming.request_model(card)
-        end
-        natives.CREATE_AMBIENT_PICKUP(-1009939663, coords.x, coords.y, coords.z, 0, 1, card, false, true)
-    end)
 
 playerfeature["Give RP"] = menu.add_player_feature("Give RP", "action", playerparents["Give Collectibles"].id, function(f, pid) -- Skidded from Prism, credits to him
 	script.trigger_script_event(ScriptEvent["Give Collectibles"], pid, {pid, 5, 0, 1, 1, 1})
@@ -12200,6 +12197,34 @@ playerfeature["Unstuck"] = menu.add_player_feature("Unstuck", "action", playerpa
 	end
 end)
 
+playerfeature["Bribe Authorities"] = menu.add_player_feature("Bribe Authorities", "toggle", playerparents["Friendly"].id, function(f, pid)
+	while f.on do
+		system.yield(0)
+		if player.is_player_valid(pid) then
+			script.trigger_script_event(1071490035, pid, {player.player_id(), 0, 0, utils.time_ms(), 0, script_func.get_global_main(pid)})
+			system.wait(5000)
+		else
+			f.on = false
+			menu.notify("Invalid Player.", Meteor, 3, 211)
+			return
+		end
+	end
+end)
+
+playerfeature["Off The Radar"] = menu.add_player_feature("Off The Radar", "toggle", playerparents["Friendly"].id, function(f, pid)
+	while f.on do
+		system.yield(0)
+		if player.is_player_valid(pid) then
+			script.trigger_script_event(-162943635, pid, {player.player_id(), utils.time() - 60, utils.time(), 1, 1, script_func.get_global_main(pid)})
+			system.wait(5000)
+		else
+			f.on = false
+			menu.notify("Invalid Player.", Meteor, 3, 211)
+			return
+		end
+	end
+end)
+
 playerfeature["Ceo Money Loop"] = menu.add_player_feature("Ceo Money Loop", "value_str", playerparents["Friendly"].id, function(f, pid)
 	if f.on then
 		if f.value == 0 then
@@ -12219,6 +12244,44 @@ end):set_str_data({
 	"10K (Every 60 Sec)",
 	"30K (Every 2 Min)"
 })
+
+playerfeature["RP Drop"] = menu.add_player_feature("RP Drop", "toggle", playerparents["Give Collectibles"].id, function(f, pid)
+	while f.on do
+		local random_hash = 0x4D6514A3
+		local random_int = math.random(1, 8)
+		if random_int == 1 then
+			random_hash = 0x4D6514A3
+		elseif random_int == 2 then
+			random_hash = 0x748F3A2A
+		elseif random_int == 3 then
+			random_hash = 0x1A9736DA
+		elseif random_int == 4 then
+			random_hash = 0x3D1B7A2F
+		elseif random_int == 5 then
+			random_hash = 0x1A126315
+		elseif random_int == 6 then
+			random_hash = 0xD937A5E9
+		elseif random_int == 7 then
+			random_hash = 0x23DDE6DB
+		elseif random_int == 8 then
+			random_hash = 0x991F8C36
+		end
+		utilities.request_model(random_hash)
+		natives.CREATE_AMBIENT_PICKUP(0x2C014CA6, player.get_player_coords(pid) + v3(0, 0, 3), 0, 1, random_hash, false, true)
+		system.yield(50)
+	end
+end)
+
+playerfeature["Drop Cards"] = menu.add_player_feature("Drop Cards", "toggle", playerparents["Friendly"].id, function(f, pid)
+        local coords = player.get_player_coords(pid)
+        coords.z = coords.z + 1.5
+        local card = gameplay.get_hash_key("vw_prop_vw_lux_card_01a")
+        utilities.request_model(card)
+        if streaming.has_model_loaded(card) == false then  
+            streaming.request_model(card)
+        end
+        natives.CREATE_AMBIENT_PICKUP(-1009939663, coords.x, coords.y, coords.z, 0, 1, card, false, true)
+    end)
 
 playerparents["Spawn"] = menu.add_player_feature("Spawn", "parent", playerparents["Meteor"].id)
 
@@ -12650,3 +12713,4 @@ do
 end
 
 menu.notify("Loaded Script Successfully!\n\n" .. Meteor .. " for 2Take1 " .. discord, Meteor, 6, NotifyColours["green"])
+
